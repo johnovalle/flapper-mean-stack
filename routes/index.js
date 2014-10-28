@@ -32,6 +32,22 @@ router.param('post', function(req, res, next, id){
   });
 });
 
+//hmmmm
+
+router.param('comment', function(req, res, next, id){
+  var query = Comment.findById(id);
+  
+  query.exec(function (err, comment){
+    if (err) { return next(err); }
+    if (!comment) { return next(new Error("can't find comment")); }
+    
+    req.comment = comment;
+    return next();
+  });
+});
+
+//does that work?
+
 router.get('/posts/:post', function(req, res){
   res.json(req.post);
 });
@@ -53,3 +69,24 @@ router.post('/posts', function(req, res, next){
   });
 });
 
+router.post('/posts/:post/comments', function(req, res, next){
+  var comment = new Comment(req.body);
+  comment.post = req.post;
+  
+  comment.save(function(err, comment){
+    if(err) { return next(err); }
+    
+    req.post.comments.push(comment);
+    req.post.save(function(err, post){
+      if(err) { return next(err); }
+      
+      res.json(comment);
+    });
+  });
+});
+
+router.get('/posts/:post', function(req, res, next){
+  req.post.populate('comments', function(err, post){
+    res.json(post);
+  });  
+});
